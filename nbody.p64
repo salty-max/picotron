@@ -1,0 +1,279 @@
+picotron cartridge // www.picotron.net
+version 2
+
+:: gfx/
+:: map/
+:: sfx/
+:: main.lua
+--[[pod_format="raw",created="2026-01-01 17:54:47",modified="2026-01-01 17:58:35",revision=3]]
+-- N-Body Gravity Simulation
+-- Watch random particles form galaxies and clusters
+
+function _init()
+	-- Particles
+	particles={}
+	num_particles=80  -- reduced from 200
+	
+	-- Spawn modes: 0=random, 1=disc, 2=two clouds
+	spawn_mode=0
+	
+	spawn_particles()
+	
+	-- Camera
+	cam_x=0
+	cam_y=0
+	cam_zoom=1
+	
+	-- Physics
+	g=0.3  -- gravitational constant
+	softening=5  -- prevents extreme forces at close range
+	damping=0.99  -- slight damping to prevent chaos
+	
+	-- Mouse
+	mx,my,mb=0,0,0
+	lmx,lmy=0,0
+	
+	-- Settings
+	show_trails=false  -- off by default for performance
+	paused=false
+	speed=1
+	
+	-- Stats
+	time=0
+end
+
+function spawn_particles()
+	particles={}
+	
+	if spawn_mode==0 then
+		-- Random cloud
+		for i=1,num_particles do
+			add(particles,{
+				x=(rnd(2)-1)*200,
+				y=(rnd(2)-1)*200,
+				vx=(rnd(2)-1)*2,
+				vy=(rnd(2)-1)*2,
+				mass=1,
+				col=7+rnd(9),
+				trail={}
+			})
+		end
+		
+	elseif spawn_mode==1 then
+		-- Rotating disc
+		for i=1,num_particles do
+			local angle=rnd(1)
+			local radius=20+rnd(150)
+			local x=cos(angle)*radius
+			local y=sin(angle)*radius
+			
+			-- Orbital velocity
+			local speed=sqrt(g*num_particles/radius)*0.8
+			local vx=-sin(angle)*speed
+			local vy=cos(angle)*speed
+			
+			add(particles,{
+				x=x,
+				y=y,
+				vx=vx,
+				vy=vy,
+				mass=1,
+				col=7+rnd(9),
+				trail={}
+			})
+		end
+		
+	elseif spawn_mode==2 then
+		-- Two colliding clouds
+		for i=1,num_particles/2 do
+			add(particles,{
+				x=-150+rnd(50),
+				y=rnd(100)-50,
+				vx=1,
+				vy=0,
+				mass=1,
+				col=8+rnd(4),
+				trail={}
+			})
+		end
+		for i=1,num_particles/2 do
+			add(particles,{
+				x=150+rnd(50),
+				y=rnd(100)-50,
+				vx=-1,
+				vy=0,
+				mass=1,
+				col=12+rnd(4),
+				trail={}
+			})
+		end
+	end
+end
+
+function _update()
+	-- Input
+	if keyp("t") then show_trails=not show_trails end
+	if keyp("p") then paused=not paused end
+	if keyp("r") then 
+		spawn_mode=(spawn_mode+1)%3
+		spawn_particles()
+		time=0
+	end
+	if keyp("up") then speed=mid(0.5,speed*1.5,5) end
+	if keyp("down") then speed=mid(0.5,speed/1.5,5) end
+	
+	-- Mouse control
+	mx,my,mb=mouse()
+	
+	if mb==1 then
+		-- Pan camera
+		cam_x-=(mx-lmx)/cam_zoom
+		cam_y-=(my-lmy)/cam_zoom
+	elseif mb==2 then
+		-- Zoom
+		cam_zoom*=1+(my-lmy)/100
+		cam_zoom=mid(0.3,cam_zoom,3)
+	end
+	lmx,lmy=mx,my
+	
+	-- Physics
+	if not paused then
+		-- Calculate forces between all pairs (optimized)
+		for i=1,#particles do
+			local p1=particles[i]
+			p1.ax=0
+			p1.ay=0
+		end
+		
+		-- Only calculate each pair once
+		for i=1,#particles-1 do
+			local p1=particles[i]
+			
+			for j=i+1,#particles do
+				local p2=particles[j]
+				local dx=p2.x-p1.x
+				local dy=p2.y-p1.y
+				local dist_sq=dx*dx+dy*dy+softening*softening
+				local dist=sqrt(dist_sq)
+				
+				-- Gravitational force
+				local force=g/dist_sq
+				local fx=force*dx/dist
+				local fy=force*dy/dist
+				
+				-- Apply to both particles (Newton's 3rd law)
+				p1.ax+=fx
+				p1.ay+=fy
+				p2.ax-=fx
+				p2.ay-=fy
+			end
+		end
+		
+		-- Update velocities and positions
+		for p in all(particles) do
+			p.vx+=p.ax*speed
+			p.vy+=p.ay*speed
+			p.vx*=damping
+			p.vy*=damping
+			p.x+=p.vx*speed
+			p.y+=p.vy*speed
+			
+			-- Trail (every 3 frames when enabled)
+			if show_trails and time%3==0 then
+				add(p.trail,{p.x,p.y})
+				if #p.trail>20 then
+					deli(p.trail,1)
+				end
+			end
+		end
+		
+		time+=1
+	end
+end
+
+function _draw()
+	cls(0)
+	
+	-- Draw trails
+	if show_trails then
+		for p in all(particles) do
+			for i=2,#p.trail do
+				local t1=p.trail[i-1]
+				local t2=p.trail[i]
+				local sx1,sy1=to_screen(t1[1],t1[2])
+				local sx2,sy2=to_screen(t2[1],t2[2])
+				
+				local c=1
+				if i/#p.trail>0.7 then c=p.col end
+				
+				line(sx1,sy1,sx2,sy2,c)
+			end
+		end
+	end
+	
+	-- Draw particles
+	for p in all(particles) do
+		local sx,sy=to_screen(p.x,p.y)
+		
+		-- Size based on velocity (hotter = brighter/bigger)
+		local speed=sqrt(p.vx*p.vx+p.vy*p.vy)
+		local size=mid(1,speed/3,3)
+		
+		circfill(sx,sy,size,p.col)
+	end
+	
+	-- Calculate center of mass
+	local cx,cy=0,0
+	local total_mass=0
+	for p in all(particles) do
+		cx+=p.x*p.mass
+		cy+=p.y*p.mass
+		total_mass+=p.mass
+	end
+	cx/=total_mass
+	cy/=total_mass
+	
+	local scx,scy=to_screen(cx,cy)
+	circ(scx,scy,5,8)
+	
+	-- UI
+	local mode_names={"random","disc","collision"}
+	?"mode: "..mode_names[spawn_mode+1],5,5,7
+	?"particles: "..#particles,5,13,7
+	?"time: "..time,5,21,7
+	?"speed: "..speed.."x",5,29,7
+	?"",5,37,7
+	?"r: change mode",5,45,7
+	?"t: trails  p: pause",5,53,7
+	?"time speed",5,61,7
+	?"drag: pan  right-drag: zoom",5,69,7
+end
+
+function to_screen(x,y)
+	return (x-cam_x)*cam_zoom+240, (y-cam_y)*cam_zoom+135
+end
+:: .info.pod
+--[[pod,created="2025-11-13 21:07:43",modified="2026-01-01 17:58:35",runtime=24,workspaces={{location="main.lua#240",workspace_index=1},{location="gfx/0.gfx",workspace_index=2},{location="map/0.map",workspace_index=3},{location="sfx/0.sfx",workspace_index=4}}]]
+:: gfx/.info.pod
+--[[pod,created="2025-11-13 21:07:43",modified="2026-01-01 17:58:35"]]
+:: gfx/0.gfx
+b64$LS1bW3BvZCxjcmVhdGVkPSIyMDI1LTAxLTE3IDEwOjM1OjQ4Iixtb2RpZmllZD0iMjAyNS0w
+MS0xNyAxMDozNzo0NCIscmV2aXNpb249Ml1dbHo0AH4AAAASMQAA8yF7WzBdPXtibXA9cHh1AEMg
+EBAE8FYHEAfAF9AXwAcQB-BWLGZsYWdzPTAscGFuX3gIAMt5PTAsem9vbT04fSw_AB-wMQD-----
+-----------------------------------------------------------XUG09OH19
+:: map/.info.pod
+--[[pod,created="2025-11-13 21:07:43",modified="2026-01-01 17:58:35"]]
+:: map/0.map
+b64$LS1bW3BvZCxjcmVhdGVkPSIyMDI1LTAxLTE3IDEwOjM1OjQ4Iixtb2RpZmllZD0iMjAyNi0w
+MS0wMSAxNzo1NDozNSIscmV2aXNpb249Ml1dbHo0AEwAAABQAAAA8Rx7e2JtcD1weHUATIAgIAD-
+AAD---8DLGhpZGRlbj1mYWxzZSxwYW5feD0wCADSeT0wLHRpbGVfaD0xNgoAEHcKAIB6b29tPTF9
+fQ==
+:: sfx/.info.pod
+--[[pod,created="2025-11-13 21:07:43",modified="2026-01-01 17:58:35"]]
+:: sfx/0.sfx
+b64$LS1bW3BvZCxjcmVhdGVkPSIyMDI1LTA3LTMxIDA4OjMwOjI4Iixtb2RpZmllZD0iMjAyNS0w
+Ny0zMSAwODozMDoyOCIscmV2aXNpb249MF1dbHo0AKAAAAALCgAA-zBweHUAAygAAAQABA9AEAIO
+AAGgASACoA4ADxAADfDKAQIDQA8PkAQFBgdADJAICQoLQAyQDwwPDQ8ODEAM8P8BAOv-J6oBEAYP
+MBABIAEgAfAAAhACDhABIA8hIAEwD0Dwww8oD--wxg-4Cg--D4AP9w8NAfAJARAGDjAA------_9
+H-8BAKzPyA9AAA8QQP--sPD-AQD-6lD-----KQ==
+:: [eoc]

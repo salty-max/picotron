@@ -1,0 +1,214 @@
+picotron cartridge // www.picotron.net
+version 2
+
+:: gfx/
+:: map/
+:: sfx/
+:: main.lua
+--[[pod_format="raw",created="2026-01-01 18:18:53",modified="2026-01-01 18:22:30",revision=2]]
+-- Electromagnetic Field Lines Simulation (Optimized)
+-- Simple and efficient field visualization
+
+function _init()
+	-- Charges
+	charges={
+		{x=180, y=135, q=1},   -- positive
+		{x=300, y=135, q=-1}   -- negative
+	}
+	
+	-- Mouse
+	mx,my,mb=0,0,0
+	dragging=nil
+	
+	-- Settings
+	show_vectors=true
+	show_potential=false
+	
+	-- Grid for vector field
+	grid_step=20
+end
+
+function _update()
+	-- Input
+	if keyp("v") then show_vectors=not show_vectors end
+	if keyp("p") then show_potential=not show_potential end
+	if keyp("c") then charges={} end
+	if keyp("r") then _init() end
+	
+	-- Mouse
+	mx,my,mb=mouse()
+	
+	-- Add charges with Z/X
+	if btnp(4) then  -- Z = positive
+		add(charges,{x=mx, y=my, q=1})
+	end
+	if btnp(5) then  -- X = negative
+		add(charges,{x=mx, y=my, q=-1})
+	end
+	
+	-- Drag charges
+	if mb>0 then
+		if not dragging then
+			-- Find charge to drag
+			for c in all(charges) do
+				local dx=mx-c.x
+				local dy=my-c.y
+				if sqrt(dx*dx+dy*dy)<12 then
+					dragging=c
+					break
+				end
+			end
+		end
+		
+		if dragging then
+			dragging.x=mx
+			dragging.y=my
+		end
+	else
+		dragging=nil
+	end
+end
+
+function _draw()
+	cls(0)
+	
+	-- Draw field strength as background
+	if show_potential then
+		for px=0,479,6 do
+			for py=0,269,6 do
+				local pot=get_potential(px,py)
+				
+				-- Color by potential
+				local col=0
+				if pot>0.5 then col=8      -- red = high positive
+				elseif pot>0.2 then col=14  -- pink
+				elseif pot>-0.2 then col=1  -- dark gray = neutral
+				elseif pot>-0.5 then col=13 -- light blue
+				else col=12 end             -- blue = high negative
+				
+				pset(px,py,col)
+			end
+		end
+	end
+	
+	-- Draw vector field
+	if show_vectors then
+		for gx=10,470,grid_step do
+			for gy=10,260,grid_step do
+				-- Get field vector
+				local fx,fy=get_field(gx,gy)
+				local mag=sqrt(fx*fx+fy*fy)
+				
+				if mag>0.01 then
+					-- Normalize and scale
+					local scale=min(8,mag*20)
+					fx=fx/mag*scale
+					fy=fy/mag*scale
+					
+					-- Color by magnitude
+					local col=5
+					if mag>0.5 then col=7
+					elseif mag>0.2 then col=6 end
+					
+					-- Draw arrow line
+					local ex=gx+fx
+					local ey=gy+fy
+					line(gx,gy,ex,ey,col)
+					
+					-- Arrow head (perpendicular vectors)
+					local perpx=-fy/scale*2
+					local perpy=fx/scale*2
+					line(ex,ey,ex-fx/2+perpx,ey-fy/2+perpy,col)
+					line(ex,ey,ex-fx/2-perpx,ey-fy/2-perpy,col)
+				end
+			end
+		end
+	end
+	
+	-- Draw charges
+	for c in all(charges) do
+		local col=c.q>0 and 8 or 12
+		circfill(c.x,c.y,10,col)
+		circ(c.x,c.y,11,7)
+		
+		-- Label
+		local label=c.q>0 and "+" or "-"
+		print(label,c.x-2,c.y-2,7)
+	end
+	
+	-- Show field at cursor
+	if #charges>0 then
+		local fx,fy=get_field(mx,my)
+		local mag=sqrt(fx*fx+fy*fy)
+		?"field: "..flr(mag*100)/100,5,250,7
+	end
+	
+	-- UI
+	?"charges: "..#charges,5,5,7
+	?"z: add +  x: add -",5,13,7
+	?"drag: move",5,21,7
+	?"v: vectors ["..tostr(show_vectors).."]",5,29,7
+	?"p: potential ["..tostr(show_potential).."]",5,37,7
+	?"c: clear  r: reset",5,45,7
+end
+
+function get_field(x,y)
+	local fx,fy=0,0
+	
+	for c in all(charges) do
+		local dx=x-c.x
+		local dy=y-c.y
+		local r_sq=dx*dx+dy*dy
+		
+		if r_sq>25 then  -- avoid singularity near charge
+			local r=sqrt(r_sq)
+			local strength=c.q/r_sq
+			
+			fx+=strength*dx/r
+			fy+=strength*dy/r
+		end
+	end
+	
+	return fx,fy
+end
+
+function get_potential(x,y)
+	local pot=0
+	
+	for c in all(charges) do
+		local dx=x-c.x
+		local dy=y-c.y
+		local r=sqrt(dx*dx+dy*dy)
+		
+		if r>5 then
+			pot+=c.q/r
+		end
+	end
+	
+	return pot
+end
+:: .info.pod
+--[[pod,created="2025-11-13 21:07:43",modified="2026-01-01 18:22:31",runtime=24,workspaces={{location="main.lua#181",workspace_index=1},{location="gfx/0.gfx",workspace_index=2},{location="map/0.map",workspace_index=3},{location="sfx/0.sfx",workspace_index=4}}]]
+:: gfx/.info.pod
+--[[pod,created="2025-11-13 21:07:43",modified="2026-01-01 18:22:31"]]
+:: gfx/0.gfx
+b64$LS1bW3BvZCxjcmVhdGVkPSIyMDI1LTAxLTE3IDEwOjM1OjQ4Iixtb2RpZmllZD0iMjAyNS0w
+MS0xNyAxMDozNzo0NCIscmV2aXNpb249Ml1dbHo0AH4AAAASMQAA8yF7WzBdPXtibXA9cHh1AEMg
+EBAE8FYHEAfAF9AXwAcQB-BWLGZsYWdzPTAscGFuX3gIAMt5PTAsem9vbT04fSw_AB-wMQD-----
+-----------------------------------------------------------XUG09OH19
+:: map/.info.pod
+--[[pod,created="2025-11-13 21:07:43",modified="2026-01-01 18:22:31"]]
+:: map/0.map
+b64$LS1bW3BvZCxjcmVhdGVkPSIyMDI1LTAxLTE3IDEwOjM1OjQ4Iixtb2RpZmllZD0iMjAyNi0w
+MS0wMSAxODoxODo0NCIscmV2aXNpb249Ml1dbHo0AEwAAABQAAAA8Rx7e2JtcD1weHUATIAgIAD-
+AAD---8DLGhpZGRlbj1mYWxzZSxwYW5feD0wCADSeT0wLHRpbGVfaD0xNgoAEHcKAIB6b29tPTF9
+fQ==
+:: sfx/.info.pod
+--[[pod,created="2025-11-13 21:07:43",modified="2026-01-01 18:22:31"]]
+:: sfx/0.sfx
+b64$LS1bW3BvZCxjcmVhdGVkPSIyMDI1LTA3LTMxIDA4OjMwOjI4Iixtb2RpZmllZD0iMjAyNS0w
+Ny0zMSAwODozMDoyOCIscmV2aXNpb249MF1dbHo0AKAAAAALCgAA-zBweHUAAygAAAQABA9AEAIO
+AAGgASACoA4ADxAADfDKAQIDQA8PkAQFBgdADJAICQoLQAyQDwwPDQ8ODEAM8P8BAOv-J6oBEAYP
+MBABIAEgAfAAAhACDhABIA8hIAEwD0Dwww8oD--wxg-4Cg--D4AP9w8NAfAJARAGDjAA------_9
+H-8BAKzPyA9AAA8QQP--sPD-AQD-6lD-----KQ==
+:: [eoc]

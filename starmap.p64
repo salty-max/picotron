@@ -1,0 +1,204 @@
+picotron cartridge // www.picotron.net
+version 2
+
+:: gfx/
+:: map/
+:: sfx/
+:: astro.lua
+--[[pod_format="raw",created="2026-01-01 02:21:37",modified="2026-01-01 14:52:48",revision=28]]
+function makestars()
+	starlist={
+		{{0, 0, 0}, 		{0, 0, 0}, 		0, 		"Sun", 					"b", 10},
+		{{14, 29, 43}, 	{-62, 40, 46}, 4.2421, 	"Proxima Centauri", 	"s", 24},
+		{{14, 39, 36.5}, 	{-60, 50, 02}, 4.3650, 	"Alpha Centauri",		"b", 10},
+		{{17, 39, 35.1}, 	{4, 41, 36}, 	5.9630, 	"Barnard's Star", 	"s", 24},
+		{{10, 49, 18.7}, 	{-53, 19, 10}, 6.5880, 	"Luhman 16", 			"s", 20},
+		{{10, 56, 29.2}, 	{7, 0, 53}, 	7.7825, 	"Wolf 359", 			"s", 24},
+		{{11, 3, 20.2}, 	{35, 58, 12}, 	8.2905, 	"Lalande 21185",		"s", 24},
+		{{6, 45, 8.8}, 		{-16, 42, 58}, 8.5828, 	"Sirius", 				"b", 7},
+		{{1, 39, 1.3}, 		{-17, 57, 01}, 8.7280, 	"Luyten 726-8", 		"s", 24},
+		{{15, 41, 51.5}, 	{-22, 50, 25}, 9.3000, 	"Wise 1541-2250", 	"s", 20},
+		{{18, 49, 49.4}, 	{-23, 50, 10}, 9.6183, 	"Ross 154", 			"s", 24},
+		{{23, 41, 54.7}, 	{44, 10, 30}, 	10.322, 	"Ross 248", 			"s", 24},
+		{{3, 32, 55.8}, 	{-9, 27, 30}, 	10.522, 	"Epsilon Eridani",		"b", 25},
+		{{23, 5, 52}, 		{-35, 51, 11}, 10.742, 	"Lacaille 9352", 		"s", 24},
+		{{11, 47, 44.4}, 	{0, 48, 16}, 	10.919, 	"Ross 128", 			"s", 24},
+		{{22, 38, 33.4}, 	{-15, 18, 7}, 	11.266, 	"EZ Aquarii", 			"s", 24},
+		{{07, 39, 18.1}, 	{5, 13, 30}, 	11.402, 	"Procyon", 				"b", 7},
+		{{21, 06, 53.9}, 	{38, 44, 58}, 	11.403, 	"61 Cygni", 				"b", 25},
+		{{18, 42, 46.7}, 	{59, 37, 49}, 	11.525, 	"Struve 2398", 		"s", 24},
+		{{1, 18, 22.9}, 	{44, 1, 23}, 	11.624, 	"Groombridge 34", 	"s", 24},
+		{{22, 3, 21.7}, 	{-56, 47, 10}, 11.824, 	"Epsilon Indi", 		"b", 25},
+		{{8, 29, 49.5}, 	{26, 46, 37}, 	11.826, 	"DX Cancri", 			"s", 24},
+		{{1, 44, 4.1}, 		{-15, 56, 15}, 11.887, 	"Tau Ceti", 			"b", 10},
+		{{3, 35, 59.7}, 	{-44, 30, 45}, 11.991, 	"GJ 1061", 				"s", 24},
+		{{1, 12, 30.6}, 	{-16, 59, 56}, 12.132, 	"YZ Ceti", 				"s", 24},
+		{{07, 27, 24.5}, 	{5, 13, 33}, 	12.366, 	"Luyten's Star", 		"s", 24},
+		{{2, 53, 0.9}, 		{16, 52, 53}, 	12.571, 	"Teegarden's Star", 	"s", 24},
+		{{18, 45, 5.3}, 	{-63, 57, 48}, 12.571, 	"SCR 1845-6357", 		"s", 24},
+		{{5, 11, 40.6}, 	{-45, 1, 6}, 	12.777, 	"Kapteyn's Star", 	"s", 24},
+		{{21, 17, 15.3}, 	{-38, 52, 03}, 12.870, 	"Lacaille 8760", 		"s", 24},
+		{{22, 27, 59.5}, 	{57, 41, 45}, 	13.149, 	"Kruger 60", 			"s", 24},
+		{{10, 48, 14.7}, 	{-39, 56, 06}, 13.167, 	"DEN 1048-3956", 		"s", 24},
+		{{6, 29, 23.4}, 	{-2, 48, 50}, 	13.349, 	"Ross 614", 			"s", 24}
+	}
+	
+	stars={}
+	for s in all(starlist) do
+		local ra=s[1]
+		local dec=s[2]
+		local dist=s[3]
+		local theta=ratotheta(ra)/360
+		local phi=dectophi(dec)/360
+		
+		local star={
+			dist*cos(phi)*cos(theta),	-- x
+			dist*cos(phi)*-sin(theta),	-- y
+			dist*-sin(phi),					-- z
+			s[4],								-- name
+			s[5]=="s" and 1 or 2,		-- size
+			s[6],								-- color
+		}
+		add(stars,star)
+	end
+end
+
+function ratotheta(ra)
+	local h,m,s=ra[1],ra[2],ra[3]
+	return 15*h+15/60*m+15/3600*s
+end
+
+function dectophi(dec)
+	local d,m,s=dec[1],dec[2],dec[3]
+	return d+(m/60+s/3600)*sgn(d)
+end
+:: main.lua
+--[[pod_format="raw",created="2026-01-01 01:13:32",modified="2026-01-01 15:09:59",revision=109]]
+include "astro.lua"
+
+function _init()
+	-- grid
+	edges={}
+	for i=-14,14,2 do
+		add(edges,{{i,-14,0},{i,14,0},1})
+		add(edges,{{-14,i,0},{14,i,0},1})
+	end
+	
+	makestars()
+	
+	czoom=10			-- zoom factor
+	crx=0.125			-- x rotation
+	cry=0.328			-- y rotation
+	crxs=0			-- x rotation speed
+	crys=0			-- y rotation speed
+	lmx,lmy=0,0		-- last mouse x,y
+	showhelp=false
+end
+
+function _update()
+	if keyp("space") then
+		showhelp=showhelp==true and false or true
+	end
+	mx,my,mb,mwx,mwy=mouse()
+	-- zoom
+	if mwy<0 then
+		czoom/=2
+	elseif mwy>0 then
+		czoom*=2
+	end
+	
+	-- rotate
+	if mb>0 then
+		crxs=(mx-lmx)/1000
+		crys=(my-lmy)/1000
+	else
+		crxs*=0.9
+		crys*=0.9
+	end
+	
+	crx-=crxs
+	cry+=crys
+	cry=mid(0,cry,0.5)
+	lmx,lmy=mx,my
+end
+
+function _draw()
+	cls(0)
+	
+	crxcos=cos(crx)
+	crxsin=sin(crx)
+	crycos=cos(cry)
+	crysin=sin(cry)
+	
+	if showhelp then
+		-- draw grid
+		for e in all(edges) do
+			local estart=project(e[1])
+			local eend=project(e[2])
+			line(estart[1],estart[2],eend[1],eend[2],e[3])
+		end
+	end
+	
+	local closestar=nil
+	local closedist=999
+	
+	-- draw stars
+	for s in all(stars) do
+	 local p=project(s)
+	 local p2=project({s[1],s[2],0})
+	 if showhelp then
+	 	line(p[1],p[2],p2[1],p2[2],21)
+	 end
+	 circfill(p[1],p[2],s[5],s[6])
+	 
+	 local d=dist(p[1],p[2],mx,my)
+	 if d<closedist and d<8 then
+	 	closestar=s
+	 	closedist=d
+	 end
+	end
+	
+	if closestar then
+		local p=project(closestar)
+		circ(p[1],p[2],closestar[5]==1 and 2 or 3,7)
+		print(closestar[4],p[1]+8,p[2]-3,7)
+	end
+end
+
+function project(p)
+	local rp={p[1],p[2]}
+	rp[1]=(p[1]*crxcos)-(p[2]*crxsin)
+	rp[2]=(p[1]*crxsin)+(p[2]*crxcos)
+	rp[2]=(p[3]*crysin)+(rp[2]*crycos)
+	return {(rp[1]*czoom)+240,(rp[2]*czoom)+135}
+end
+
+function dist(x1,y1,x2,y2)
+	local dx,dy=x2-x1,y2-y1
+	return sqrt(dx*dx+dy*dy)
+end
+:: .info.pod
+--[[pod,created="2025-11-13 21:07:43",modified="2026-01-01 15:09:59",runtime=24,workspaces={{location="main.lua#19",workspace_index=1},{location="astro.lua#34",workspace_index=1},{location="gfx/0.gfx",workspace_index=2},{location="map/0.map",workspace_index=3},{location="sfx/0.sfx",workspace_index=4}}]]
+:: gfx/.info.pod
+--[[pod,created="2025-11-13 21:07:43",modified="2026-01-01 15:09:59"]]
+:: gfx/0.gfx
+b64$LS1bW3BvZCxjcmVhdGVkPSIyMDI1LTAxLTE3IDEwOjM1OjQ4Iixtb2RpZmllZD0iMjAyNS0w
+MS0xNyAxMDozNzo0NCIscmV2aXNpb249Ml1dbHo0AH4AAAASMQAA8yF7WzBdPXtibXA9cHh1AEMg
+EBAE8FYHEAfAF9AXwAcQB-BWLGZsYWdzPTAscGFuX3gIAMt5PTAsem9vbT04fSw_AB-wMQD-----
+-----------------------------------------------------------XUG09OH19
+:: map/.info.pod
+--[[pod,created="2025-11-13 21:07:43",modified="2026-01-01 15:09:59"]]
+:: map/0.map
+b64$LS1bW3BvZCxjcmVhdGVkPSIyMDI1LTAxLTE3IDEwOjM1OjQ4Iixtb2RpZmllZD0iMjAyNi0w
+MS0wMSAwMTowMjo0NCIscmV2aXNpb249Ml1dbHo0AEwAAABQAAAA8Rx7e2JtcD1weHUATIAgIAD-
+AAD---8DLGhpZGRlbj1mYWxzZSxwYW5feD0wCADSeT0wLHRpbGVfaD0xNgoAEHcKAIB6b29tPTF9
+fQ==
+:: sfx/.info.pod
+--[[pod,created="2025-11-13 21:07:43",modified="2026-01-01 15:09:59"]]
+:: sfx/0.sfx
+b64$LS1bW3BvZCxjcmVhdGVkPSIyMDI1LTA3LTMxIDA4OjMwOjI4Iixtb2RpZmllZD0iMjAyNS0w
+Ny0zMSAwODozMDoyOCIscmV2aXNpb249MF1dbHo0AKAAAAALCgAA-zBweHUAAygAAAQABA9AEAIO
+AAGgASACoA4ADxAADfDKAQIDQA8PkAQFBgdADJAICQoLQAyQDwwPDQ8ODEAM8P8BAOv-J6oBEAYP
+MBABIAEgAfAAAhACDhABIA8hIAEwD0Dwww8oD--wxg-4Cg--D4AP9w8NAfAJARAGDjAA------_9
+H-8BAKzPyA9AAA8QQP--sPD-AQD-6lD-----KQ==
+:: [eoc]

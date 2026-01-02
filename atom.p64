@@ -1,0 +1,751 @@
+picotron cartridge // www.picotron.net
+version 2
+
+:: gfx/
+:: map/
+:: sfx/
+:: main.lua
+--[[pod_format="raw",created="2026-01-01 18:25:09",modified="2026-01-01 20:02:53",revision=34]]
+-- Atom Simulation (2D)
+-- Simple 2D view with detailed nucleus and electron orbits
+
+function _init()
+	-- Nucleus
+	nucleus={
+		x=240,
+		y=135,
+		protons=6,  -- carbon by default
+		neutrons=6,
+		radius=20
+	}
+	
+	-- Electron shells with subshells
+	-- Format: {n, radius, subshells={{type, max_e, electrons={}}}}
+	shells={
+		{n=1, radius=60, subshells={
+			{type="1s", max_electrons=2, electrons={}}
+		}},
+		{n=2, radius=95, subshells={
+			{type="2s", max_electrons=2, electrons={}},
+			{type="2p", max_electrons=6, electrons={}}
+		}},
+		{n=3, radius=130, subshells={
+			{type="3s", max_electrons=2, electrons={}},
+			{type="3p", max_electrons=6, electrons={}},
+			{type="3d", max_electrons=10, electrons={}}
+		}},
+		{n=4, radius=165, subshells={
+			{type="4s", max_electrons=2, electrons={}},
+			{type="4p", max_electrons=6, electrons={}}
+		}}
+	}
+	
+	-- Nucleon positions (arranged in nucleus)
+	nucleons={}
+	
+	-- Add electrons
+	add_electrons(nucleus.protons)
+	arrange_nucleons()
+	
+	-- Settings
+	show_orbits=true
+	show_nucleus_detail=true
+	show_probability=false
+	paused=false
+	speed=1
+	quantum_mode=false  -- toggle between classical (Bohr) and quantum view
+	
+	-- Time
+	time=0
+	
+	-- Mouse
+	mx,my,mb=0,0,0
+	
+	-- Excitation state
+	is_excited=false
+	excitation_timer=0
+	
+	-- Camera/zoom
+	zoom=1
+	offset_x=0
+	offset_y=0
+	
+	-- Temperature (in Kelvin)
+	temperature=300  -- room temperature
+	temp_min=0
+	temp_max=6000  -- ~sun surface
+	
+	-- Elements (atomic number, symbol, name, neutrons)
+	elements={
+		{1,"H","Hydrogen",0},
+		{2,"He","Helium",2},
+		{3,"Li","Lithium",4},
+		{4,"Be","Beryllium",5},
+		{5,"B","Boron",6},
+		{6,"C","Carbon",6},
+		{7,"N","Nitrogen",7},
+		{8,"O","Oxygen",8},
+		{9,"F","Fluorine",10},
+		{10,"Ne","Neon",10},
+		{11,"Na","Sodium",12},
+		{12,"Mg","Magnesium",12},
+		{13,"Al","Aluminum",14},
+		{14,"Si","Silicon",14},
+		{15,"P","Phosphorus",16},
+		{16,"S","Sulfur",16},
+		{17,"Cl","Chlorine",18},
+		{18,"Ar","Argon",22},
+		{19,"K","Potassium",20},
+		{20,"Ca","Calcium",20},
+		{21,"Sc","Scandium",24},
+		{22,"Ti","Titanium",26},
+		{23,"V","Vanadium",28},
+		{24,"Cr","Chromium",28},
+		{25,"Mn","Manganese",30},
+		{26,"Fe","Iron",30},
+		{27,"Co","Cobalt",32},
+		{28,"Ni","Nickel",31},
+		{29,"Cu","Copper",35},
+		{30,"Zn","Zinc",35}
+	}
+	current_element=6  -- carbon
+end
+
+function _update()
+	-- Input
+	if keyp("o") then show_orbits=not show_orbits end
+	if keyp("n") then show_nucleus_detail=not show_nucleus_detail end
+	if keyp("p") then paused=not paused end
+	if keyp("q") then quantum_mode=not quantum_mode end
+	if keyp("[") then speed=max(0.5,speed/1.5) end
+	if keyp("]") then speed=min(3,speed*1.5) end
+	
+	-- Change element
+	if keyp("left") then
+		current_element=max(1,current_element-1)
+		change_element(elements[current_element][1])
+	end
+	if keyp("right") then
+		current_element=min(#elements,current_element+1)
+		change_element(elements[current_element][1])
+	end
+	if keyp("r") then _init() end
+	
+	-- Zoom controls
+	if keyp("z") or keyp("-") then
+		zoom=max(0.3,zoom*0.8)
+	end
+	if keyp("x") or keyp("=") then
+		zoom=min(2,zoom*1.25)
+	end
+	
+	-- Auto-zoom based on element size
+	if keyp("a") then
+		local max_radius=0
+		for shell in all(shells) do
+			if shell.radius>max_radius then
+				max_radius=shell.radius
+			end
+		end
+		zoom=120/(max_radius+20)
+	end
+	
+	-- Temperature controls
+	if btn(2) then  -- up arrow held
+		temperature=min(temp_max,temperature+50)
+	end
+	if btn(3) then  -- down arrow held
+		temperature=max(temp_min,temperature-50)
+	end
+	if keyp("t") then
+		temperature=300  -- reset to room temp
+	end
+	
+	-- Physics
+	if not paused then
+		-- Update electrons
+		for shell in all(shells) do
+			for sub in all(shell.subshells) do
+				for e in all(sub.electrons) do
+					-- Orbital speed (inner shells faster)
+					local speed_factor=1/shell.n
+					e.angle+=0.01*speed_factor*speed
+				end
+			end
+		end
+		
+		-- Handle excitation decay
+		if is_excited then
+			excitation_timer-=1
+			if excitation_timer<=0 then
+				decay_electron()
+				-- Check if any electrons are still excited
+				local still_excited=false
+				for shell in all(shells) do
+					for sub in all(shell.subshells) do
+						for e in all(sub.electrons) do
+							if e.excited then
+								still_excited=true
+								break
+							end
+						end
+					end
+				end
+				if not still_excited then
+					is_excited=false
+				else
+					excitation_timer=120  -- reset timer for next decay
+				end
+			end
+		end
+		
+		-- Thermal excitation based on temperature
+		-- Higher temp = more likely to excite
+		-- Boltzmann-like probability
+		if time%30==0 and temperature>100 then  -- no excitation below 100K
+			local excite_prob=temperature/10000  -- 0 at 0K, 0.6 at 6000K
+			
+			if rnd(1)<excite_prob then
+				-- Try to excite an electron
+				excite_electron()
+			end
+		end
+		
+		-- Thermal de-excitation
+		if time%5==0 then
+			-- Count and decay excited electrons based on temperature
+			local excited_count=0
+			
+			-- Count excited electrons
+			for shell in all(shells) do
+				for sub in all(shell.subshells) do
+					for e in all(sub.electrons) do
+						if e.excited then
+							excited_count+=1
+						end
+					end
+				end
+			end
+			
+			-- Update is_excited flag
+			is_excited=(excited_count>0)
+			
+			-- Decay based on temperature
+			if excited_count>0 then
+				if temperature<100 then
+					-- Below 100K, decay 5 electrons per check
+					for i=1,5 do
+						if is_excited then
+							decay_electron()
+						end
+					end
+				else
+					-- Higher temps, probabilistic decay
+					local decay_prob=1-(temperature/6000)
+					if rnd(1)<decay_prob*0.8 then
+						decay_electron()
+					end
+				end
+			end
+		end
+		
+		time+=1
+	end
+end
+
+function _draw()
+	cls(0)
+	
+	-- Background glow based on temperature
+	if temperature>1000 then
+		local glow_intensity=min(1,(temperature-1000)/5000)
+		for i=1,flr(glow_intensity*50) do
+			local x=rnd(480)
+			local y=rnd(270)
+			pset(x,y,8)  -- red glow
+		end
+	end
+	
+	-- Draw quantum probability clouds (only in quantum mode)
+	if quantum_mode then
+		for shell in all(shells) do
+			for sub in all(shell.subshells) do
+				if #sub.electrons>0 then
+					-- Draw electron probability density
+					-- Density varies by orbital type (s, p, d)
+					local orbital_type=sub.type:sub(2,2)  -- extract s, p, or d
+					
+					for i=1,400 do
+						local angle=rnd(1)
+						local r_factor=rnd(1)
+						
+						-- Different probability distributions for different orbitals
+						if orbital_type=="s" then
+							-- Spherical (s orbital)
+							r_factor=sqrt(r_factor)  -- radial distribution
+						elseif orbital_type=="p" then
+							-- Dumbbell shape (p orbital)
+							if rnd(1)<0.5 then
+								r_factor=r_factor*abs(sin(angle*2))
+							else
+								r_factor=r_factor*abs(cos(angle*2))
+							end
+						elseif orbital_type=="d" then
+							-- More complex (d orbital)
+							r_factor=r_factor*abs(sin(angle*4))
+						end
+						
+						local r=shell.radius*(0.7+r_factor*0.6)
+						local wx=nucleus.x+cos(angle)*r
+						local wy=nucleus.y+sin(angle)*r
+						local sx,sy=world_to_screen(wx,wy)
+						
+						if sx>0 and sx<480 and sy>0 and sy<270 then
+							-- Color based on excitation
+							local excited_in_shell=false
+							for e in all(sub.electrons) do
+								if e.excited then excited_in_shell=true end
+							end
+							local col=excited_in_shell and 10 or 13
+							if rnd(1)<0.15 then
+								pset(sx,sy,col)
+							end
+						end
+					end
+				end
+			end
+		end
+	end
+	
+	-- Draw orbital paths (only in classical mode)
+	if show_orbits and not quantum_mode then
+		for shell in all(shells) do
+			local has_electrons=false
+			for sub in all(shell.subshells) do
+				if #sub.electrons>0 then has_electrons=true end
+			end
+			
+			if has_electrons then
+				local cx,cy=world_to_screen(nucleus.x,nucleus.y)
+				circ(cx,cy,apply_zoom(shell.radius),5)
+			end
+		end
+	end
+	
+	-- Draw nucleus
+	draw_nucleus()
+	
+	-- Draw electrons as particles (only in classical mode)
+	if not quantum_mode then
+		for shell in all(shells) do
+			for sub in all(shell.subshells) do
+				for e in all(sub.electrons) do
+				local wx=nucleus.x+cos(e.angle)*shell.radius
+				local wy=nucleus.y+sin(e.angle)*shell.radius
+				local sx,sy=world_to_screen(wx,wy)
+				
+				-- Electron color (yellow if excited, different shades for spin)
+				local col=12  -- blue
+				local col2=13  -- light blue
+				if e.excited then
+					col=10  -- yellow
+					col2=9  -- orange
+				elseif e.spin==1 then
+					col=12  -- light blue (spin up)
+					col2=13
+				else
+					col=1  -- dark blue (spin down)
+					col2=12
+				end
+				
+				local size=apply_zoom(3)
+				
+				-- Draw as filled circle only
+				circfill(sx,sy,size,col)
+				
+				-- Draw spin indicator (small arrow)
+				if zoom>0.6 and not e.excited then
+					if e.spin==1 then
+						-- Up arrow
+						line(sx,sy+size+2,sx,sy+size+5,7)
+						line(sx,sy+size+2,sx-1,sy+size+3,7)
+						line(sx,sy+size+2,sx+1,sy+size+3,7)
+					else
+						-- Down arrow
+						line(sx,sy-size-2,sx,sy-size-5,7)
+						line(sx,sy-size-2,sx-1,sy-size-3,7)
+						line(sx,sy-size-2,sx+1,sy-size-3,7)
+					end
+				end
+				
+				-- Glow for excited electrons
+				if e.excited then
+					circ(sx,sy,size+2,10)
+					circ(sx,sy,size+3,9)
+				end
+				
+				-- Motion blur trail
+				if not e.excited and zoom>0.5 then
+					for i=1,3 do
+						local trail_angle=e.angle-i*0.02
+						local twx=nucleus.x+cos(trail_angle)*shell.radius
+						local twy=nucleus.y+sin(trail_angle)*shell.radius
+						local tsx,tsy=world_to_screen(twx,twy)
+						pset(tsx,tsy,1)
+					end
+				end
+			end
+		end
+	end  -- end classical mode
+	
+	-- Draw info panel
+	draw_info_panel()
+end
+
+function draw_info_panel()
+	local elem=elements[current_element]
+	
+	-- Panel background
+	rectfill(5,5,150,135,0)
+	rect(5,5,150,135,6)
+	rect(6,6,149,134,5)
+	
+	-- Mode indicator
+	local mode_text=quantum_mode and "QUANTUM" or "CLASSICAL"
+	local mode_col=quantum_mode and 13 or 8
+	print(mode_text,15,12,mode_col)
+	
+	-- Element symbol (large)
+	print(elem[2],90,12,7)
+	print(elem[2],91,12,7)  -- bold
+	print(elem[2],90,13,7)
+	
+	-- Element name
+	print(elem[3],15,25,13)
+	
+	-- Separator
+	line(10,35,145,35,5)
+	
+	-- Atomic info
+	print("atomic number: "..elem[1],15,42,7)
+	print("protons: "..nucleus.protons,15,52,8)
+	print("neutrons: "..nucleus.neutrons,15,62,6)
+	print("electrons: "..count_electrons(),15,72,12)
+	
+	-- Separator
+	line(10,82,145,82,5)
+	
+	-- Electron configuration
+	print("configuration:",15,88,7)
+	local y=96
+	for shell in all(shells) do
+		for sub in all(shell.subshells) do
+			if #sub.electrons>0 then
+				print("  "..sub.type..": "..#sub.electrons,15,y,13)
+				y+=8
+			end
+		end
+	end
+	
+	-- Excitation state
+	if is_excited then
+		-- Count excited electrons
+		local count=0
+		for shell in all(shells) do
+			for sub in all(shell.subshells) do
+				for e in all(sub.electrons) do
+					if e.excited then count+=1 end
+				end
+			end
+		end
+		print("EXCITED: "..count.."e-",15,110,10)
+		print("decay in "..flr(excitation_timer/30).."s",15,118,9)
+	end
+	
+	-- Zoom level
+	print("zoom: "..flr(zoom*100).."%",15,125,5)
+	
+	-- Temperature
+	print("temp: "..flr(temperature).."K",15,133,temperature>1000 and 8 or 7)
+	
+	-- Controls hint
+	print("< > t ^ v",50,145,5)
+	
+	-- Legend (bottom right)
+	rectfill(340,195,475,265,0)
+	rect(340,195,475,265,6)
+	rect(341,196,474,264,5)
+	
+	print("legend:",348,201,7)
+	circfill(348,213,4,8)
+	print("proton",358,210,7)
+	circfill(348,225,4,6)
+	print("neutron",358,222,7)
+	circfill(348,237,3,12)
+	line(348,240,348,243,7)
+	line(348,240,347,241,7)
+	line(348,240,349,241,7)
+	print("spin up",358,234,7)
+	circfill(348,249,3,1)
+	line(348,246,348,243,7)
+	line(348,246,347,245,7)
+	line(348,246,349,245,7)
+	print("spin down",358,246,7)
+	circfill(348,261,3,10)
+	print("excited",358,258,7)
+	
+	-- Controls panel (bottom left)
+	rectfill(5,200,165,265,0)
+	rect(5,200,165,265,6)
+	rect(6,201,164,264,5)
+	
+	print("controls:",13,206,7)
+	print("< > change element",13,218,13)
+	print("q   quantum mode",13,228,13)
+	print("^/v temperature",13,238,8)
+	print("t   reset temp",13,248,5)
+	print("[/] speed",13,258,5)
+end
+
+function draw_nucleus()
+	local cx,cy=world_to_screen(nucleus.x,nucleus.y)
+	local nr=apply_zoom(nucleus.radius)
+	
+	-- Nucleus glow
+	for r=nr,nr+8 do
+		circ(cx,cy,r,1)
+	end
+	
+	if show_nucleus_detail then
+		-- Draw individual nucleons
+		for n in all(nucleons) do
+			local wx=nucleus.x+n.x
+			local wy=nucleus.y+n.y
+			local sx,sy=world_to_screen(wx,wy)
+			local col=n.is_proton and 8 or 6
+			local size=apply_zoom(4)
+			
+			-- Draw as filled circle only
+			circfill(sx,sy,size,col)
+		end
+	else
+		-- Simple nucleus (solid circle when detail is off)
+		circfill(cx,cy,nr,8)
+	end
+end
+
+function arrange_nucleons()
+	nucleons={}
+	local total=nucleus.protons+nucleus.neutrons
+	
+	-- Pack nucleons in hexagonal pattern
+	local placed=0
+	local layer=0
+	local particle_size=4.5  -- radius of each nucleon
+	
+	while placed<total do
+		if layer==0 then
+			-- Center particle
+			add(nucleons,{
+				x=0,
+				y=0,
+				is_proton=(placed<nucleus.protons)
+			})
+			placed+=1
+		else
+			-- Hexagonal ring
+			local particles_in_layer=layer*6
+			local ring_radius=layer*particle_size*2
+			
+			for i=1,particles_in_layer do
+				if placed>=total then break end
+				
+				local angle=(i-1)/particles_in_layer
+				local x=cos(angle)*ring_radius
+				local y=sin(angle)*ring_radius
+				
+				add(nucleons,{
+					x=x,
+					y=y,
+					is_proton=(placed<nucleus.protons)
+				})
+				
+				placed+=1
+			end
+		end
+		
+		layer+=1
+	end
+	
+	-- Adjust nucleus radius based on particle count
+	nucleus.radius=mid(12,layer*particle_size*2+5,35)
+end
+
+function add_electrons(count)
+	-- Clear all electrons
+	for shell in all(shells) do
+		for sub in all(shell.subshells) do
+			sub.electrons={}
+		end
+	end
+	
+	-- Aufbau filling order (energy levels)
+	local filling_order={
+		{1,1}, -- 1s
+		{2,1}, -- 2s
+		{2,2}, -- 2p
+		{3,1}, -- 3s
+		{3,2}, -- 3p
+		{4,1}, -- 4s (fills before 3d!)
+		{3,3}, -- 3d
+		{4,2}  -- 4p
+	}
+	
+	local remaining=count
+	
+	for order in all(filling_order) do
+		if remaining<=0 then break end
+		
+		local shell_idx=order[1]
+		local sub_idx=order[2]
+		
+		if shell_idx<=#shells and sub_idx<=#shells[shell_idx].subshells then
+			local subshell=shells[shell_idx].subshells[sub_idx]
+			local to_add=min(remaining,subshell.max_electrons)
+			
+			-- Add electrons evenly distributed
+			for i=1,to_add do
+				local angle=(i-1)/subshell.max_electrons+rnd(0.05)
+				-- Pauli exclusion: alternate spin up/down
+				local spin=(i%2==1) and 1 or -1  -- 1=up, -1=down
+				add(subshell.electrons,{
+					angle=angle,
+					excited=false,
+					spin=spin
+				})
+			end
+			
+			remaining-=to_add
+		end
+	end
+end
+
+function change_element(atomic_number)
+	nucleus.protons=atomic_number
+	-- Use neutron count from element data
+	nucleus.neutrons=elements[current_element][4]
+	add_electrons(atomic_number)
+	arrange_nucleons()
+end
+
+function count_electrons()
+	local total=0
+	for shell in all(shells) do
+		for sub in all(shell.subshells) do
+			total+=#sub.electrons
+		end
+	end
+	return total
+end
+
+function world_to_screen(x,y)
+	return (x-nucleus.x)*zoom+240+offset_x, (y-nucleus.y)*zoom+135+offset_y
+end
+
+function apply_zoom(val)
+	return val*zoom
+end
+
+function excite_electron()
+	-- Find an electron in a lower energy level to excite
+	-- Try to move from filled subshells to empty higher ones
+	for shell in all(shells) do
+		for sub in all(shell.subshells) do
+			if #sub.electrons>0 then
+				-- Find a higher energy subshell with room
+				for shell2 in all(shells) do
+					if shell2.n>shell.n then
+						for sub2 in all(shell2.subshells) do
+							if #sub2.electrons<sub2.max_electrons then
+								-- Move electron
+								local e=sub.electrons[1]
+								e.excited=true
+								e.excite_time=time  -- track when it was excited
+								del(sub.electrons,e)
+								add(sub2.electrons,e)
+								
+								is_excited=true
+								if excitation_timer<=0 then
+									excitation_timer=120
+								end
+								return
+							end
+						end
+					end
+				end
+			end
+		end
+	end
+end
+
+function decay_electron()
+	-- Find the oldest excited electron and move it back
+	local oldest_electron=nil
+	local oldest_time=999999
+	local from_shell=nil
+	local from_sub=nil
+	
+	for shell in all(shells) do
+		for sub in all(shell.subshells) do
+			for e in all(sub.electrons) do
+				if e.excited and e.excite_time<oldest_time then
+					oldest_electron=e
+					oldest_time=e.excite_time
+					from_shell=shell
+					from_sub=sub
+				end
+			end
+		end
+	end
+	
+	if oldest_electron then
+		-- Find lower energy subshell with room
+		for shell2 in all(shells) do
+			if shell2.n<from_shell.n then
+				for sub2 in all(shell2.subshells) do
+					if #sub2.electrons<sub2.max_electrons then
+						oldest_electron.excited=false
+						del(from_sub.electrons,oldest_electron)
+						add(sub2.electrons,oldest_electron)
+						return
+					end
+				end
+			end
+		end
+	end
+end
+:: .info.pod
+--[[pod,created="2025-11-13 21:07:43",modified="2026-01-01 20:02:53",runtime=24,workspaces={{location="main.lua#718",workspace_index=1},{location="gfx/0.gfx",workspace_index=2},{location="map/0.map",workspace_index=3},{location="sfx/0.sfx",workspace_index=4}}]]
+:: gfx/.info.pod
+--[[pod,created="2025-11-13 21:07:43",modified="2026-01-01 20:02:53"]]
+:: gfx/0.gfx
+b64$LS1bW3BvZCxjcmVhdGVkPSIyMDI1LTAxLTE3IDEwOjM1OjQ4Iixtb2RpZmllZD0iMjAyNS0w
+MS0xNyAxMDozNzo0NCIscmV2aXNpb249Ml1dbHo0AH4AAAASMQAA8yF7WzBdPXtibXA9cHh1AEMg
+EBAE8FYHEAfAF9AXwAcQB-BWLGZsYWdzPTAscGFuX3gIAMt5PTAsem9vbT04fSw_AB-wMQD-----
+-----------------------------------------------------------XUG09OH19
+:: map/.info.pod
+--[[pod,created="2025-11-13 21:07:43",modified="2026-01-01 20:02:53"]]
+:: map/0.map
+b64$LS1bW3BvZCxjcmVhdGVkPSIyMDI1LTAxLTE3IDEwOjM1OjQ4Iixtb2RpZmllZD0iMjAyNi0w
+MS0wMSAxODoyNTowMCIscmV2aXNpb249Ml1dbHo0AEwAAABQAAAA8Rx7e2JtcD1weHUATIAgIAD-
+AAD---8DLGhpZGRlbj1mYWxzZSxwYW5feD0wCADSeT0wLHRpbGVfaD0xNgoAEHcKAIB6b29tPTF9
+fQ==
+:: sfx/.info.pod
+--[[pod,created="2025-11-13 21:07:43",modified="2026-01-01 20:02:53"]]
+:: sfx/0.sfx
+b64$LS1bW3BvZCxjcmVhdGVkPSIyMDI1LTA3LTMxIDA4OjMwOjI4Iixtb2RpZmllZD0iMjAyNS0w
+Ny0zMSAwODozMDoyOCIscmV2aXNpb249MF1dbHo0AKAAAAALCgAA-zBweHUAAygAAAQABA9AEAIO
+AAGgASACoA4ADxAADfDKAQIDQA8PkAQFBgdADJAICQoLQAyQDwwPDQ8ODEAM8P8BAOv-J6oBEAYP
+MBABIAEgAfAAAhACDhABIA8hIAEwD0Dwww8oD--wxg-4Cg--D4AP9w8NAfAJARAGDjAA------_9
+H-8BAKzPyA9AAA8QQP--sPD-AQD-6lD-----KQ==
+:: [eoc]

@@ -1,0 +1,68 @@
+picotron cartridge // www.picotron.net
+version 2
+
+:: gfx/
+:: map/
+:: sfx/
+:: .info.pod
+--[[pod,created="2025-11-13 21:07:43",modified="2026-01-01 17:53:02",runtime=24,workspaces={{location="main.lua#1",workspace_index=1},{location="gfx/0.gfx",workspace_index=2},{location="map/0.map",workspace_index=3},{location="sfx/0.sfx",workspace_index=4}}]]
+:: gfx/.info.pod
+--[[pod,created="2025-11-13 21:07:43",modified="2026-01-01 17:53:02"]]
+:: gfx/0.gfx
+b64$LS1bW3BvZCxjcmVhdGVkPSIyMDI1LTAxLTE3IDEwOjM1OjQ4Iixtb2RpZmllZD0iMjAyNS0w
+MS0xNyAxMDozNzo0NCIscmV2aXNpb249Ml1dbHo0AH4AAAASMQAA8yF7WzBdPXtibXA9cHh1AEMg
+EBAE8FYHEAfAF9AXwAcQB-BWLGZsYWdzPTAscGFuX3gIAMt5PTAsem9vbT04fSw_AB-wMQD-----
+-----------------------------------------------------------XUG09OH19
+:: main.lua
+b64$LS1bW3BvZF9mb3JtYXQ9InJhdyIsY3JlYXRlZD0iMjAyNi0wMS0wMSAxNzo0OTozOSIsbW9k
+aWZpZWQ9IjIwMjYtMDEtMDEgMTc6NTM6MDIiLHJldmlzaW9uPTJdXQpmdW5jdGlvbiBfaW5pdCgp
+CgktLSBNYXNzaXZlIG9iamVjdCAobGVucykKCWxlbnM9ewoJCXg9MjQwLAoJCXk9MTM1LAoJCW1h
+c3M9NTAsCgkJcmFkaXVzPTEyCgl9CgkKCS0tIEJhY2tncm91bmQgc3RhcnMKCWJnX3N0YXJzPXt9
+Cglmb3IgaT0xLDMwIGRvCgkJYWRkKGJnX3N0YXJzLHsKCQkJeD1ybmQoNDgwKSwKCQkJeT1ybmQo
+MjcwKSwKCQkJc2l6ZT0xK3JuZCgyKSwKCQkJY29sPTcrcm5kKDkpCgkJfSkKCWVuZAoJCgktLSBN
+b3VzZQoJbXgsbXksbWI9MCwwLDAKCQoJLS0gU2V0dGluZ3MKCXNob3dfZ3JpZD1mYWxzZQoJc3Ry
+ZW5ndGg9MzAgIC0tIGxlbnNpbmcgc3RyZW5ndGgKZW5kCgpmdW5jdGlvbiBfdXBkYXRlKCkKCS0t
+IElucHV0CglpZiBrZXlwKCJnIikgdGhlbiBzaG93X2dyaWQ9bm90IHNob3dfZ3JpZCBlbmQKCWlm
+IGtleXAoInVwIikgdGhlbiBzdHJlbmd0aCs9NSBlbmQKCWlmIGtleXAoImRvd24iKSB0aGVuIHN0
+cmVuZ3RoPW1heCg1LHN0cmVuZ3RoLTUpIGVuZAoJaWYga2V5cCgic3BhY2UiKSB0aGVuIF9pbml0
+KCkgZW5kCgkKCS0tIE1vdXNlIGNvbnRyb2wKCW14LG15LG1iPW1vdXNlKCkKCWlmIG1iPjAgdGhl
+bgoJCWxlbnMueD1teAoJCWxlbnMueT1teQoJZW5kCmVuZAoKZnVuY3Rpb24gX2RyYXcoKQoJY2xz
+KDApCgkKCS0tIERyYXcgYmFja2dyb3VuZCBncmlkCglpZiBzaG93X2dyaWQgdGhlbgoJCWZvciBn
+eD0wLDQ4MCwzMCBkbwoJCQlsaW5lKGd4LDAsZ3gsMjcwLDEpCgkJZW5kCgkJZm9yIGd5PTAsMjcw
+LDMwIGRvCgkJCWxpbmUoMCxneSw0ODAsZ3ksMSkKCQllbmQKCWVuZAoJCgktLSBEcmF3IGxlbnNl
+ZCBzdGFycwoJZm9yIHMgaW4gYWxsKGJnX3N0YXJzKSBkbwoJCS0tIENhbGN1bGF0ZSBkaXN0YW5j
+ZSBmcm9tIGxlbnMKCQlsb2NhbCBkeD1zLngtbGVucy54CgkJbG9jYWwgZHk9cy55LWxlbnMueQoJ
+CWxvY2FsIGRpc3Q9c3FydChkeCpkeCtkeSpkeSkKCQkKCQlpZiBkaXN0PmxlbnMucmFkaXVzKzUg
+dGhlbgoJCQktLSBBcHBseSBncmF2aXRhdGlvbmFsIGxlbnNpbmcgZGlzdG9ydGlvbgoJCQktLSBT
+dGFycyBnZXQgZGlzcGxhY2VkIHJhZGlhbGx5IGZyb20gbGVucwoJCQlsb2NhbCBkZWZsZWN0aW9u
+PXN0cmVuZ3RoKmxlbnMubWFzcy9kaXN0CgkJCWxvY2FsIGxlbnNlZF94PXMueCtkeCpkZWZsZWN0
+aW9uL2Rpc3QKCQkJbG9jYWwgbGVuc2VkX3k9cy55K2R5KmRlZmxlY3Rpb24vZGlzdAoJCQkKCQkJ
+LS0gRHJhdyBsZW5zZWQgaW1hZ2UKCQkJY2lyY2ZpbGwobGVuc2VkX3gsbGVuc2VkX3kscy5zaXpl
+LHMuY29sKQoJCQkKCQkJLS0gRHJhdyBtdWx0aXBsZSBpbWFnZXMgZm9yIHN0cm9uZyBsZW5zaW5n
+CgkJCWlmIGRpc3Q8ODAgdGhlbgoJCQkJLS0gU2Vjb25kIGltYWdlIChtaXJyb3JlZCkKCQkJCWxv
+Y2FsIG1pcnJvcl94PXMueC1keCpkZWZsZWN0aW9uL2Rpc3QqMC41CgkJCQlsb2NhbCBtaXJyb3Jf
+eT1zLnktZHkqZGVmbGVjdGlvbi9kaXN0KjAuNQoJCQkJY2lyY2ZpbGwobWlycm9yX3gsbWlycm9y
+X3kscy5zaXplKjAuNyxzLmNvbCkKCQkJZW5kCgkJCQoJCQktLSBTaG93IG9yaWdpbmFsIHBvc2l0
+aW9uIGZhaW50bHkKCQkJY2lyY2ZpbGwocy54LHMueSxzLnNpemUsMSkKCQllbmQKCWVuZAoJCgkt
+LSBEcmF3IEVpbnN0ZWluIHJpbmcKCWxvY2FsIGVpbnN0ZWluX3I9c3FydChzdHJlbmd0aCpsZW5z
+Lm1hc3MpCgljaXJjKGxlbnMueCxsZW5zLnksZWluc3RlaW5fciw4KQoJCgktLSBEcmF3IHRoZSBs
+ZW5zCgljaXJjZmlsbChsZW5zLngsbGVucy55LGxlbnMucmFkaXVzLDApCgljaXJjKGxlbnMueCxs
+ZW5zLnksbGVucy5yYWRpdXMsNikKCQoJLS0gVUkKCT8iZHJhZzogbW92ZSBsZW5zIiw1LDUsNwoJ
+PyLihpHihpM6IHN0cmVuZ3RoPSIuLnN0cmVuZ3RoLDUsMTMsNwoJPyJnOiBncmlkICBzcGFjZTog
+cmVzZXQiLDUsMjEsNwplbmQ=
+:: map/.info.pod
+--[[pod,created="2025-11-13 21:07:43",modified="2026-01-01 17:53:02"]]
+:: map/0.map
+b64$LS1bW3BvZCxjcmVhdGVkPSIyMDI1LTAxLTE3IDEwOjM1OjQ4Iixtb2RpZmllZD0iMjAyNi0w
+MS0wMSAxNzo0OTozMiIscmV2aXNpb249Ml1dbHo0AEwAAABQAAAA8Rx7e2JtcD1weHUATIAgIAD-
+AAD---8DLGhpZGRlbj1mYWxzZSxwYW5feD0wCADSeT0wLHRpbGVfaD0xNgoAEHcKAIB6b29tPTF9
+fQ==
+:: sfx/.info.pod
+--[[pod,created="2025-11-13 21:07:43",modified="2026-01-01 17:53:02"]]
+:: sfx/0.sfx
+b64$LS1bW3BvZCxjcmVhdGVkPSIyMDI1LTA3LTMxIDA4OjMwOjI4Iixtb2RpZmllZD0iMjAyNS0w
+Ny0zMSAwODozMDoyOCIscmV2aXNpb249MF1dbHo0AKAAAAALCgAA-zBweHUAAygAAAQABA9AEAIO
+AAGgASACoA4ADxAADfDKAQIDQA8PkAQFBgdADJAICQoLQAyQDwwPDQ8ODEAM8P8BAOv-J6oBEAYP
+MBABIAEgAfAAAhACDhABIA8hIAEwD0Dwww8oD--wxg-4Cg--D4AP9w8NAfAJARAGDjAA------_9
+H-8BAKzPyA9AAA8QQP--sPD-AQD-6lD-----KQ==
+:: [eoc]
