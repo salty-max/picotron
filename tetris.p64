@@ -4,24 +4,62 @@ version 2
 :: gfx/
 :: map/
 :: sfx/
+:: gui.lua
+--[[pod_format="raw",created="2026-01-03 01:10:00",modified="2026-01-03 01:59:36",revision=44]]
+function game_over()
+	_upd=update_gameover
+	_drw=draw_gameover
+end
+
+function draw_gameover()
+	cls()
+	map()
+	map(pmap,0,0,fix*16,fiy*16)	
+	print("\^w\^t\^#GAME OVER!",192,5*16,7)
+end
+
+function update_gameover()
+	if btnp(4) or btnp(5) then
+		_upd=update_menu
+		_drw=draw_menu
+	end
+end
+
+function draw_menu()
+	cls()
+	map(0,22,48,20,24,5)
+end
+
+function update_menu()
+	if btnp(4) or btnp(5) then
+		start_game()
+	end
+end
+
+
 :: main.lua
---[[pod_format="raw",created="2026-01-02 00:23:59",modified="2026-01-03 01:05:20",revision=279]]
+--[[pod_format="raw",created="2026-01-02 00:23:59",modified="2026-01-03 02:17:47",revision=325]]
 -- TODO
--- - game over
--- - hard drop
--- - ghost piece
--- - gui
--- - - show next piece
--- - - score
--- - - high score
+-- game over / start screen
+-- hard drop
+-- ghost piece
+
+-- gui
+-- - show next piece
+-- - score
+-- - high score
 -- - levels
 -- - sound/music
--- - JUICE
+
+-- JUICE
+-- - shutters on game over
 
 -- Nice to have
 -- - grab bag randomizer
 -- - push on rotation
 -- - piece preview
+
+include "gui.lua"
 
 function _init()
 	fix=10  				-- playfield start x
@@ -29,8 +67,8 @@ function _init()
 	fiw=10  				-- playfield width
 	fih=17  				-- playfield height
 	flash_count=0		-- line clear flash timer
-	
-	start_game()
+	_upd=update_menu
+	_drw=draw_menu
 end
 
 function _draw()
@@ -48,6 +86,7 @@ function start_game()
 	cleared={}
 	softdrop_delay=0
 	
+	erase()
 	drop_piece()
 end
 
@@ -113,7 +152,7 @@ function update_game()
 			wait=max_wait
 			piy+=1
 			
-			if test_piece(pix,piy,piid,prot)then
+			if test_piece(pix,piy,piid,prot) then
 				pmap=put_piece(pix,piy,piid,prot)
 			else
 				piy-=1
@@ -140,13 +179,27 @@ function update_game()
 end
 
 function drop_piece()
-	pix=4           	-- piece x pos
-	piy=-1           	-- piece y pos
+	pix=3           	-- piece x pos
+	piy=0           	-- piece y pos
 	piid=flr(rnd(7))	-- piece id
-	prot=0          	-- piece rotation
-	pmap=put_piece(pix,piy,piid,prot)
+	prot=0				-- piece rotation
 	
-	wait=max_wait
+	-- center square tetromino
+	if piid==5 then
+		pix=4
+	end
+	-- drop square and line on top
+	if piid==5 or piid==6 then
+		piy=-1
+	end
+	
+	-- drop piece if space available, otherwise game over
+	if test_piece(pix,piy,piid,prot) then
+		pmap=put_piece(pix,piy,piid,prot)
+		wait=max_wait
+	else
+		game_over()
+	end
 end
 
 function iterate_piece(px,py,pi,pr,cb)
@@ -232,10 +285,18 @@ function do_clear()
 	cleared={}
 	drop_piece()
 end
+
+function erase()
+	for px=0,fiw-1 do
+		for py=0,fih-1 do
+			mset(fix+px,fiy+py,0)
+		end
+	end
+end
 :: .info.pod
---[[pod,created="2025-11-13 21:07:43",modified="2026-01-03 01:05:20",runtime=24,workspaces={{location="main.lua#2",workspace_index=1},{location="gfx/0.gfx",workspace_index=2},{location="map/0.map",workspace_index=3},{location="sfx/0.sfx",workspace_index=4}}]]
+--[[pod,created="2025-11-13 21:07:43",modified="2026-01-03 02:17:47",runtime=24,workspaces={{location="main.lua#88",workspace_index=1},{location="gui.lua#14",workspace_index=1},{location="gfx/0.gfx",workspace_index=2},{location="map/0.map",workspace_index=3},{location="sfx/0.sfx",workspace_index=4}}]]
 :: gfx/.info.pod
---[[pod,created="2025-11-13 21:07:43",modified="2026-01-03 01:05:20"]]
+--[[pod,created="2025-11-13 21:07:43",modified="2026-01-03 02:17:47"]]
 :: gfx/0.gfx
 b64$LS1bW3BvZCxjcmVhdGVkPSIyMDI1LTAxLTE3IDEwOjM1OjQ4Iixtb2RpZmllZD0iMjAyNi0w
 MS0wMiAyMTo1MDozOSIscmV2aXNpb249MTFdXWx6NACMAgAAETQAAPMhe1swXT17Ym1wPXB4dQBD
@@ -252,20 +313,21 @@ AB-OBAAAb74RDgAeoe8AIvAGyRAZJx8PeQAJNx5ZDxkJAAkXDokNBwAQmQYAFh4GAB-JBAAAv7kd
 CQAZrRkQyfACqgMeDzEA--------------------------------------------------------
 -xRQbT04fX0=
 :: map/.info.pod
---[[pod,created="2025-11-13 21:07:43",modified="2026-01-03 01:05:20"]]
+--[[pod,created="2025-11-13 21:07:43",modified="2026-01-03 02:17:47"]]
 :: map/0.map
 b64$LS1bW3BvZCxjcmVhdGVkPSIyMDI1LTAxLTE3IDEwOjM1OjQ4Iixtb2RpZmllZD0iMjAyNi0w
-MS0wMyAwMDozMjozNiIscmV2aXNpb249MzJdXWx6NAClAQAAugMAAPcUe3tibXA9cHh1AEyAMhsA
-ABAAAAsABREAAAwAAAkACQAAAAoSANAQAAADAAAdAAIAAAEdCwBRAB0ABwAYADIJAAUtAAU2AAUS
-AAE2AEECHQAAMAAmAAAMAA88ABQjAwB1AB8CMwAUcQIAAQAAAB5mABAePwAvAR45ABUUAjYAJgAA
-DAAPPAAGcxMABRIAABQ8ABEDMwAfAjMAChEI0gBQAAAAARsGACEAGw4APxsACDAACkQBGwABMwAv
-AxtdAAxBBAAAAjAAHwAqAAsAqQAxAAAaKgAxGgAEBgAPMAALIAIaMgAVBicABf8ACicAFwNXABQB
-VwAtCBDVABEcgwARHDAAHxwkAAMAKQEQHAYAIwMcDAAGJwAWGicAAkIAdQEAAAIcAAghABYZkwAV
-EhUAFhgVACEBGVQACgYALyUAGwAKEQMaARMYBgARIhIATQMYAAEVAAIMAAALAAEGAEcAGAApJADx
-DP4AACxoaWRkZW49ZmFsc2UscGFuX3g9LTEyNwsA8gB5PS00OCx0aWxlX2g9MTYKABB3CgCAem9v
-bT0xfX0=
+MS0wMyAwMTo1ODowNiIscmV2aXNpb249NDJdXWx6NADgAQAAegQAAPcUe3tibXA9cHh1AEyAMhsA
+ABAAAAsABREAAAwAAAkACQAAAAoSACAQAAEAkR0AAgAAAR0AAwwAIQcAGAAyCQAFLQAFNgAFEgAB
+NgAjAh08AAgMAA88ABEUBHIAHwIwABNRAgAAAB5gABAeogAvAR6iABYENgAIDAAPPAAGcxMABRIA
+ABSiAE8CHgACMAAKgQgQAAEAAAEbVwARGzsBPxsACC0ABxEALQAFMwAvAxtaAAlBBQAAAi0ALwAb
+gQAMIwAaBgARBAYAHweBAAogAhoGABUGJwAF8wAHJwACSAAIWgAhBwA-AAvMABEcIAERHPkAHxwk
+AAARASQAAOoAExwwAA4kABEEPAB9AQAAAhwACB4AHxN4AAIfGQYAABcmDAAIBgBRLAAAABgLAZcY
+ACMAAAMYAAESABEpBgARABgAFwASAAIeAAAEAgEYABECwAADDAAWG0cBIQAZTgAgGQAOAAJaAAIO
+ARMYuQEVAAYAFhoGAAKcAAg2AANKAQEMAB0CMAAUAMwAD2YAAgJSAgswAAuWABECYgECDAAIlgAL
+xgDxCxkAACxoaWRkZW49ZmFsc2UscGFuX3g9LTgyCgDieT0yMyx0aWxlX2g9MTYKABB3CgCgem9v
+bT0wLjV9fQ==
 :: sfx/.info.pod
---[[pod,created="2025-11-13 21:07:43",modified="2026-01-03 01:05:20"]]
+--[[pod,created="2025-11-13 21:07:43",modified="2026-01-03 02:17:47"]]
 :: sfx/0.sfx
 b64$LS1bW3BvZCxjcmVhdGVkPSIyMDI1LTA3LTMxIDA4OjMwOjI4Iixtb2RpZmllZD0iMjAyNS0w
 Ny0zMSAwODozMDoyOCIscmV2aXNpb249MF1dbHo0AKAAAAALCgAA-zBweHUAAygAAAQABA9AEAIO
