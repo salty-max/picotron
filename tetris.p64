@@ -5,10 +5,11 @@ version 2
 :: map/
 :: sfx/
 :: gui.lua
---[[pod_format="raw",created="2026-01-03 01:10:00",modified="2026-01-03 01:59:36",revision=44]]
+--[[pod_format="raw",created="2026-01-03 01:10:00",modified="2026-01-04 02:36:27",revision=46]]
 function game_over()
 	_upd=update_gameover
 	_drw=draw_gameover
+	sfx(2)
 end
 
 function draw_gameover()
@@ -38,14 +39,16 @@ end
 
 
 :: main.lua
---[[pod_format="raw",created="2026-01-02 00:23:59",modified="2026-01-04 00:50:40",revision=401]]
+--[[pod_format="raw",created="2026-01-02 00:23:59",modified="2026-01-04 02:53:55",revision=416]]
 -- TODO
+-- score
+-- high score
 -- levels
--- sound/music
 -- gui
 -- - score/level
 -- - level background
 -- - high score
+-- music
 
 -- JUICE
 -- - shutters on game over
@@ -126,15 +129,19 @@ function update_game()
 		-- movement
 		if btnp(0)and test_piece(pix-1,piy,piid,prot)then
 			pix-=1
+			sfx(0)
 		elseif btnp(1)and test_piece(pix+1,piy,piid,prot)then
 			pix+=1
+			sfx(0)
 		end
 		
 		-- rotation
 		if btnp(4)and test_piece(pix,piy,piid,prot+1)then
 			prot+=1
+			sfx(1)
 		elseif btnp(5)and test_piece(pix,piy,piid,prot-1)then
 			prot-=1
+			sfx(1)
 		end
 		
 		-- hard drop
@@ -178,12 +185,13 @@ function update_game()
 						end
 					end
 				end
-				
+				sfx(3)
 				check_clear()
 				
 				if #cleared==0 then
 					drop_piece()
 				else
+					sfx(#cleared==4 and 5 or 4)
 					flash_count=60
 				end
 			end
@@ -357,9 +365,9 @@ function init_bag()
 	until #tbag==0
 end
 :: .info.pod
---[[pod,created="2025-11-13 21:07:43",modified="2026-01-04 00:50:40",runtime=24,workspaces={{location="main.lua#1",workspace_index=1},{location="gui.lua#14",workspace_index=1},{location="gfx/0.gfx",workspace_index=2},{location="map/0.map",workspace_index=3},{location="sfx/0.sfx",workspace_index=4}}]]
+--[[pod,created="2025-11-13 21:07:43",modified="2026-01-04 02:53:55",runtime=24,workspaces={{location="main.lua#10",workspace_index=1},{location="gui.lua#4",workspace_index=1},{location="gfx/0.gfx",workspace_index=2},{location="map/0.map",workspace_index=3},{location="sfx/0.sfx",workspace_index=4}}]]
 :: gfx/.info.pod
---[[pod,created="2025-11-13 21:07:43",modified="2026-01-04 00:50:40"]]
+--[[pod,created="2025-11-13 21:07:43",modified="2026-01-04 02:53:55"]]
 :: gfx/0.gfx
 b64$LS1bW3BvZCxjcmVhdGVkPSIyMDI1LTAxLTE3IDEwOjM1OjQ4Iixtb2RpZmllZD0iMjAyNi0w
 MS0wMyAwMjozMDo1NSIscmV2aXNpb249MTRdXWx6NACuAgAATTQAAPMhe1swXT17Ym1wPXB4dQBD
@@ -593,7 +601,7 @@ KN8dKP39-f39-eUQxiDOKCAoIMYo3x0o-f39-f395RDGIM4oICggxijTHcAowB3BKMEdwSj9-f39
 -f3lEMYgzSggwCjBIMQo0h0owB0oHSjAHSgdKMAdKP39-f39-eUQxiDMKCDBKCDAKCDDKNIdwigd
 KMAdKB0owB0o-f39-f395RDGAAAAAAAAAAE=
 :: map/.info.pod
---[[pod,created="2025-11-13 21:07:43",modified="2026-01-04 00:50:40"]]
+--[[pod,created="2025-11-13 21:07:43",modified="2026-01-04 02:53:55"]]
 :: map/0.map
 b64$LS1bW3BvZCxjcmVhdGVkPSIyMDI1LTAxLTE3IDEwOjM1OjQ4Iixtb2RpZmllZD0iMjAyNi0w
 MS0wMyAwMjoyOTo1NiIscmV2aXNpb249NDNdXWx6NADeAQAAeAQAAPcUe3tibXA9cHh1AEyAMhsA
@@ -607,11 +615,19 @@ ARMYuQEVAAYAFhoGAAKcAAg2AANKAQEMAB0CMAAUAMwAD2YAAgJSAgswAAuWABECYgECDAAIlgAL
 xgDxCxkAACxoaWRkZW49ZmFsc2UscGFuX3g9LTgyCgDieT0yMyx0aWxlX2g9MTYKABB3CgCAem9v
 bT0xfX0=
 :: sfx/.info.pod
---[[pod,created="2025-11-13 21:07:43",modified="2026-01-04 00:50:40"]]
+--[[pod,created="2025-11-13 21:07:43",modified="2026-01-04 02:53:55"]]
 :: sfx/0.sfx
-b64$LS1bW3BvZCxjcmVhdGVkPSIyMDI1LTA3LTMxIDA4OjMwOjI4Iixtb2RpZmllZD0iMjAyNS0w
-Ny0zMSAwODozMDoyOCIscmV2aXNpb249MF1dbHo0AKAAAAALCgAA-zBweHUAAygAAAQABA9AEAIO
-AAGgASACoA4ADxAADfDKAQIDQA8PkAQFBgdADJAICQoLQAyQDwwPDQ8ODEAM8P8BAOv-J6oBEAYP
-MBABIAEgAfAAAhACDhABIA8hIAEwD0Dwww8oD--wxg-4Cg--D4AP9w8NAfAJARAGDjAA------_9
-H-8BAKzPyA9AAA8QQP--sPD-AQD-6lD-----KQ==
+b64$LS1bW3BvZCxjcmVhdGVkPSIyMDI1LTA3LTMxIDA4OjMwOjI4Iixtb2RpZmllZD0iMjAyNi0w
+MS0wNCAwMjozNjowNyIscmV2aXNpb249MjFdXWx6NAB0AgAAaAwAAP8wcHh1AAMoAAAEAAQPQBAC
+DgABoAEgAqAOAA8QAA3wygECA0APD5AEBQYHQAyQCAkKC0AMkA8MDw0PDgxADPD-AQDr8BSqARAG
+DyAQASABIAHwAAIQAg4QASAPISABMA9AkA8RAiAOUBoA-BKoDygP--DGD-gKD-8PgA-3Dw0BcA9z
+D2gPaQ90wAEQBg5CAPEOKRARMA9LkA8RDxIgDmAPwBAB4AEJIA_AIA9Q8I9NAPoABQ_-D6QPeg9V
+DzUPFfCrWwCrbg9vD2kPcw9lsF0AJQ9AoAASTV4A8wAPI2APpBAB8AAJIAwgDzheAB-GUAAENA8y
+oFIAJRARrwASAfAAAKIAYCMgDzzwr0QA_hjAAgABQA8lDy8PPw9PD18Pbw96D4QPjw_fD6oPtA_-
+D88P2Q-k8KFpAI93D2gPdQ9wwGUABR_2ZQA4NC96kGcABB4BEDAeAcElDgABBQ_LAAEAD5lvAEMu
+IA8ybwBoAaAPhfCsTwAg8AkDAhcwRgAVDWMBPkDww04BATEAHw0wAP----_cH-8BAKzxI8gPQAAR
+MA3--y8A8y8PF-Mv8HAPQAABBjAfSR85H0rzKlDzKg8QDx0PHg8iDxcPEPMqIQDxNw8EQA9ND0sP
+Rw9FD0APPA84DzQPMQ8uDysPKQ8mDyQPIg4PHg8dDxsPGg8ZDxcfFh8UHxMvEk8RDxDzC-UV8wv-
+IRQO8wtLAMMIATAPMvMvAvMvDy1-AP8PAg80MA8RDxcPGw8hDyYPLQ8zDzkPPg9ED0kPUA9VGgA7
+j7P-AySz-iSzeQBgEgR5ABP-AQAQKFgBbxBA87Dw-wEA-9pQ-----7k=
 :: [eoc]
